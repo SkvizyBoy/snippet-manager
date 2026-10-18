@@ -8,11 +8,19 @@ on:
 jobs:
   release:
     permissions:
-      contents: write
+      contents: write # Это критически важно для загрузки файлов в релиз
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-22.04, windows-latest]
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin' # Для Mac на Apple Silicon
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'  # Для Mac на Intel
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -40,6 +48,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -59,3 +69,4 @@ jobs:
           releaseBody: 'See the assets below to download and install the app.'
           releaseDraft: true
           prerelease: false
+          args: ${{ matrix.args }}
